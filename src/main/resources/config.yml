@@ -1,0 +1,4 @@
+# HuHoSTDAuthMe 配置文件
+
+# 无需配置哈希算法
+# 密码重置通过 authme setpassword 命令完成，AuthMe 自动处理哈希
