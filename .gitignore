@@ -1,0 +1,10 @@
+.gradle/
+build/
+dist/
+*.zip
+*.jar
+*.class
+libs/
+.idea/
+*.iml
+out/
