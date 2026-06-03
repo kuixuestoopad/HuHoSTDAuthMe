@@ -68,7 +68,8 @@ public class BotCommandListener implements Listener {
     }
 
     /**
-     * 重置密码：在线时生成随机密码，通过 authme setpassword 设置，踢出显示新密码
+     * 重置密码：在线时通过 AuthMe API 设置新密码，踢出显示新密码
+     * 整个操作在主线程执行，保证时序正确
      */
     private void handleResetPassword(BotCustomCommand event) {
         event.setCancelled(true);
@@ -83,33 +84,35 @@ public class BotCommandListener implements Listener {
             return;
         }
 
-        StringBuilder result = new StringBuilder();
+        // 在主线程执行：重置密码 + 踢出，保证顺序
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            StringBuilder result = new StringBuilder();
 
-        for (String username : boundUsers) {
-            Player player = Bukkit.getPlayerExact(username);
-            if (player == null || !player.isOnline()) {
-                result.append("⚠ ").append(username).append(" 不在线\n");
-                continue;
+            for (String username : boundUsers) {
+                Player player = Bukkit.getPlayerExact(username);
+                if (player == null || !player.isOnline()) {
+                    result.append("⚠ ").append(username).append(" 不在线\n");
+                    continue;
+                }
+
+                // 重置密码
+                String newPassword = plugin.getAuthMeManager().resetPassword(username);
+                if (newPassword == null) {
+                    result.append("❌ ").append(username).append(" 密码重置失败\n");
+                    continue;
+                }
+
+                // 踢出玩家，显示新密码
+                String kickMsg = "§a§l密码已重置！\n\n§e新密码: §f§l" + newPassword + "\n\n§7请使用新密码重新登录";
+                player.kick(Component.text(kickMsg));
+                plugin.getLogger().info("已重置 " + username + " 的密码并踢出");
+
+                result.append("✅ ").append(username).append(" 密码已重置\n");
+                result.append("   新密码: ").append(newPassword).append("\n");
             }
 
-            // 重置密码（通过 authme setpassword 命令）
-            String newPassword = plugin.getAuthMeManager().resetPassword(username);
-            if (newPassword == null) {
-                result.append("❌ ").append(username).append(" 密码重置失败\n");
-                continue;
-            }
-
-            // 踢出玩家，显示新密码
-            String kickMsg = "§a§l密码已重置！\n\n§e新密码: §f§l" + newPassword + "\n\n§7请使用新密码重新登录";
-            Player finalPlayer = player;
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                finalPlayer.kick(Component.text(kickMsg));
-            });
-
-            result.append("✅ ").append(username).append(" 密码已重置\n");
-            result.append("   新密码: ").append(newPassword).append("\n");
-        }
-
-        event.respone(result.toString().trim(), "text");
+            // 主线程内回复 QQ
+            event.respone(result.toString().trim(), "text");
+        });
     }
 }
