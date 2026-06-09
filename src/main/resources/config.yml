@@ -1,4 +1,15 @@
-# HuHoSTDAuthMe 配置文件
+# HuHoSTDAuthMe 配置文件 v1.1
 
-# 无需配置哈希算法
-# 密码重置通过 authme setpassword 命令完成，AuthMe 自动处理哈希
+# QQ 群命令名（可自定义）
+force-login-command: "强制登陆"
+reset-password-command: "重置密码"
+
+# 回报消息（{player}=用户名, {password}=新密码）
+messages:
+  force-login-success: "玩家{player}强制登录成功"
+  force-login-not-online: "玩家{player}未在线强制登录失败"
+  reset-password-success: "玩家{player}重置密码成功，新密码在踢出{player}里面"
+  reset-password-not-online: "玩家{player}未在线，无法重置密码"
+  reset-password-fail: "玩家{player}密码重置失败"
+  no-bind: "你还没有绑定任何游戏账号"
+  kick-message: "§a§l密码已重置！\n\n§e新密码: §f§l{password}\n\n§7请使用新密码重新登录"

@@ -25,9 +25,14 @@ public class BotCommandListener implements Listener {
         String command = event.getCommand();
         plugin.getLogger().info("[QQ命令] 收到: " + command);
 
-        switch (command) {
-            case "强制登陆", "强制登录" -> handleForceLogin(event);
-            case "重置密码" -> handleResetPassword(event);
+        // 匹配"强制登陆"和"强制登录"两种写法
+        String forceCmd = plugin.getForceLoginCommand();
+        String forceAlt = forceCmd.replace("登陆", "登录");
+
+        if (forceCmd.equals(command) || forceAlt.equals(command)) {
+            handleForceLogin(event);
+        } else if (plugin.getResetPasswordCommand().equals(command)) {
+            handleResetPassword(event);
         }
     }
 
@@ -44,7 +49,7 @@ public class BotCommandListener implements Listener {
 
         List<String> boundUsers = plugin.getBindManager().getBoundUsers(openId);
         if (boundUsers.isEmpty()) {
-            event.respone("❌ 你还没有绑定任何游戏账号", "text");
+            event.respone(plugin.getMessage("no-bind"), "success");
             return;
         }
 
@@ -53,24 +58,28 @@ public class BotCommandListener implements Listener {
         for (String username : boundUsers) {
             Player player = Bukkit.getPlayerExact(username);
             if (player == null || !player.isOnline()) {
-                result.append("⚠ ").append(username).append(" 不在线\n");
+                result.append(plugin.getMessage("force-login-not-online")
+                        .replace("{player}", username)).append("\n");
                 continue;
             }
 
             boolean success = plugin.getForceLoginManager().authorize(username);
             if (success) {
-                result.append("✅ ").append(username).append(" 已强制登陆\n");
+                result.append(plugin.getMessage("force-login-success")
+                        .replace("{player}", username)).append("\n");
                 player.sendMessage(Component.text("§a[QQ] 你的账号已通过 QQ 强制登陆"));
             } else {
-                result.append("❌ ").append(username).append(" 强制登陆失败\n");
+                result.append(plugin.getMessage("force-login-not-online")
+                        .replace("{player}", username)).append("\n");
             }
         }
 
-        event.respone(result.toString().trim(), "text");
+        // 回报
+        event.respone(result.toString().trim(), "success");
     }
 
     /**
-     * 重置密码：在线时通过 AuthMe API 设置新密码，踢出显示新密码
+     * 重置密码：在线时通过命令重置，踢出显示新密码
      */
     private void handleResetPassword(BotCustomCommand event) {
         event.setCancelled(true);
@@ -84,7 +93,7 @@ public class BotCommandListener implements Listener {
         plugin.getLogger().info("[重置密码] 绑定账号: " + boundUsers);
 
         if (boundUsers.isEmpty()) {
-            event.respone("❌ 你还没有绑定任何游戏账号", "text");
+            event.respone(plugin.getMessage("no-bind"), "success");
             return;
         }
 
@@ -98,7 +107,8 @@ public class BotCommandListener implements Listener {
 
                 if (player == null || !player.isOnline()) {
                     plugin.getLogger().info("[重置密码] " + username + " 不在线");
-                    result.append("⚠ ").append(username).append(" 不在线\n");
+                    result.append(plugin.getMessage("reset-password-not-online")
+                            .replace("{player}", username)).append("\n");
                     continue;
                 }
 
@@ -109,22 +119,24 @@ public class BotCommandListener implements Listener {
                 plugin.getLogger().info("[重置密码] resetPassword 返回: " + (newPassword == null ? "NULL" : newPassword));
 
                 if (newPassword == null) {
-                    result.append("❌ ").append(username).append(" 密码重置失败\n");
+                    result.append(plugin.getMessage("reset-password-fail")
+                            .replace("{player}", username)).append("\n");
                     continue;
                 }
 
                 // 踢出玩家，显示新密码
-                String kickMsg = "§a§l密码已重置！\n\n§e新密码: §f§l" + newPassword + "\n\n§7请使用新密码重新登录";
+                String kickMsg = plugin.getMessage("kick-message")
+                        .replace("{password}", newPassword)
+                        .replace("{player}", username);
                 player.kick(Component.text(kickMsg));
                 plugin.getLogger().info("[重置密码] " + username + " 已踢出，新密码: " + newPassword);
 
-                result.append("✅ ").append(username).append(" 密码已重置\n");
-                result.append("   新密码: ").append(newPassword).append("\n");
+                result.append(plugin.getMessage("reset-password-success")
+                        .replace("{player}", username)).append("\n");
             }
 
-            String response = result.toString().trim();
-            plugin.getLogger().info("[重置密码] 回复QQ: " + response);
-            event.respone(response, "text");
+            // 回报
+            event.respone(result.toString().trim(), "success");
         });
     }
 }

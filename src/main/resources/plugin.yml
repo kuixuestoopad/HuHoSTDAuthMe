@@ -1,5 +1,5 @@
 name: HuHoSTDAuthMe
-version: 1.0.0
+version: 1.1.0
 main: com.stoopad.authme.HuHoSTDAuthMe
 api-version: '1.21'
 author: stoopad
@@ -10,7 +10,12 @@ depend:
   - HuHoSTDWhiteList
   - AuthMe
 
-commands: {}
+commands:
+  huhostdauthme:
+    description: HuHoSTDAuthMe 管理命令
+    usage: /huhostdauthme reload
+    permission: qqauth.admin
+    permission-message: "§c你没有权限"
 
 permissions:
   qqauth.admin:
